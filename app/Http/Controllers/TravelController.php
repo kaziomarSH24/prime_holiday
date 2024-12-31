@@ -96,6 +96,7 @@ class TravelController extends Controller
         $validator = Validator::make($request->all(), [
             'continent_id' => 'required|exists:continents,id',
             'name' => 'required|string|unique:countries',
+            'image' => 'required|image|mimes:jpeg,png,jpg|max:2048',
         ]);
         if ($validator->fails()) {
             return response()->json([
@@ -103,9 +104,22 @@ class TravelController extends Controller
                 'message' => $validator->errors()
             ], 400);
         }
+        //check image file
+        if ($request->hasFile('image')) {
+            $image = $request->file('image');
+            $imageName = time() . rand(100, 999) . '.' . $image->getClientOriginalExtension();
+            $uploadPath = public_path('uploads/images/countries');
+            if (!file_exists($uploadPath)) {
+                mkdir($uploadPath, 0777, true);
+            }
+            $image->move($uploadPath, $imageName);
+            $imageUrl = url('uploads/images/countries/' . $imageName);
+
+        }
         $country = new Country();
         $country->continent_id = $request->continent_id;
         $country->name = $request->name;
+        $country->image = $imageUrl;
         $country->save();
         return response()->json([
             'success' => true,
@@ -120,6 +134,7 @@ class TravelController extends Controller
         $validator = Validator::make($request->all(), [
             'continent_id' => 'required|exists:continents,id',
             'name' => 'required|string|unique:countries',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
         if ($validator->fails()) {
             return response()->json([
@@ -133,6 +148,28 @@ class TravelController extends Controller
                 'success' => false,
                 'message' => 'Country not found'
             ], 404);
+        }
+
+
+
+
+        //check image file
+        if ($request->hasFile('image')) {
+            //delete old image
+            $oldImagePath = parse_url($country->image);
+            if (isset($oldImagePath['path']) && file_exists(public_path($oldImagePath['path']))) {
+                unlink(public_path($oldImagePath['path']));
+            }
+
+            $image = $request->file('image');
+            $imageName = time() . rand(100, 999) . '.' . $image->getClientOriginalExtension();
+            $uploadPath = public_path('uploads/images/countries');
+            if (!file_exists($uploadPath)) {
+                mkdir($uploadPath, 0777, true);
+            }
+            $image->move($uploadPath, $imageName);
+            $imageUrl = url('uploads/images/countries/' . $imageName);
+            $country->image = $imageUrl;
         }
         $country->continent_id = $request->continent_id;
         $country->name = $request->name;
