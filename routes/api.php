@@ -53,6 +53,12 @@ Route::group(['prefix' => 'admin'], function () {
 
         //Categories-wise Blog
         Route::get('/blog/category/blog', 'BlogController@categoriesWiseBlog');
+
+
+        /**
+         * Enquiry form controller routes
+         */
+        Route::post('/enquiry', 'EnquiryFormController@sendEnquiry');
     });
 
 
