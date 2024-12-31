@@ -19,6 +19,10 @@ return new class extends Migration
             $table->text('description');
             $table->string('image');
             $table->decimal('price', 10, 2);
+            $table->json('includes_excludes')->nullable();
+            $table->json('hotels')->nullable();
+            $table->json('price_validity')->nullable();
+            $table->json('itinerary')->nullable();
             $table->timestamps();
         });
     }
