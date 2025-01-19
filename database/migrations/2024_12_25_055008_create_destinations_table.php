@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('country_id')->constrained()->cascadeOnDelete();
             $table->string('name');
-            $table->string('title')->nullable();
+            $table->string('days')->nullable();
             $table->text('description');
             $table->string('image');
             $table->decimal('price', 10, 2);

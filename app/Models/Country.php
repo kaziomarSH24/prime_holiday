@@ -13,4 +13,9 @@ class Country extends Model
     {
         return $this->belongsTo(Continent::class);
     }
+
+    public function destinations()
+    {
+        return $this->hasMany(Destination::class);
+    }
 }

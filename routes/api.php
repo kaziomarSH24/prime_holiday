@@ -20,7 +20,8 @@ Route::group(['prefix' => 'admin'], function () {
         // Route::delete('/continent/delete/{id}', 'TravelController@deleteContinent');
 
         //country routes
-        Route::get('/country', 'TravelController@getCountries');
+        Route::get('/country/', 'TravelController@getCountries');
+        Route::get('/country/{id}', 'TravelController@getCountry');
         Route::post('/country/store', 'TravelController@storeCountry');
         Route::put('/country/update/{id}', 'TravelController@updateCountry');
         Route::delete('/country/delete/{id}', 'TravelController@deleteCountry');
@@ -33,6 +34,9 @@ Route::group(['prefix' => 'admin'], function () {
         Route::post('/destination/store', 'TravelController@storeDestination');
         Route::put('/destination/update/{id}', 'TravelController@updateDestination');
         Route::delete('/destination/delete/{id}', 'TravelController@deleteDestination');
+
+        //get destination by country
+        Route::get('/destination/country/{id}', 'TravelController@getDestinationsByCountry');
 
         /**
          * Blog controller routes

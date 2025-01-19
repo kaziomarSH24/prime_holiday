@@ -90,12 +90,31 @@ class TravelController extends Controller
         ], 200);
     }
 
+    //show country
+    public function getCountry($id)
+    {
+        $country = Country::where('id', $id)->first();
+
+        if (!$country) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Country not found'
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'country' => $country
+        ], 200);
+    }
+
     //store country
     public function storeCountry(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'continent_id' => 'required|exists:continents,id',
             'name' => 'required|string|unique:countries',
+            'title' => 'required|string',
             'image' => 'required|image|mimes:jpeg,png,jpg|max:5120',
         ]);
         if ($validator->fails()) {
@@ -119,6 +138,7 @@ class TravelController extends Controller
         $country = new Country();
         $country->continent_id = $request->continent_id;
         $country->name = $request->name;
+        $country->title = $request->title;
         $country->image = $imageUrl;
         $country->save();
         return response()->json([
@@ -134,6 +154,7 @@ class TravelController extends Controller
         $validator = Validator::make($request->all(), [
             'continent_id' => 'required|exists:continents,id',
             'name' => 'required|string|unique:countries',
+            'title' => 'required|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
         ]);
         if ($validator->fails()) {
@@ -173,6 +194,7 @@ class TravelController extends Controller
         }
         $country->continent_id = $request->continent_id;
         $country->name = $request->name;
+        $country->title = $request->title;
         $country->save();
         return response()->json([
             'success' => true,
@@ -283,10 +305,20 @@ class TravelController extends Controller
     public function storeDestination(Request $request)
     {
        try{
+        //check if destination add less than 3
+        $destinationCount = Destination::where('country_id', $request->country_id)->count();
+        if ($destinationCount >= 3) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You can add maximum 3 destinations for a country'
+            ], 400);
+        }
+
+
         $validator = Validator::make($request->all(), [
             'country_id' => 'required|exists:countries,id',
-            'name' => 'nullable|string',
-            'title' => 'nullable|string',
+            'name' => 'required|string',
+            'days' => 'required|integer',
             'description' => 'required|string',
             'image' => 'required|image|mimes:jpeg,png,jpg|max:5120',
             'price' => 'required|numeric',
@@ -319,7 +351,7 @@ class TravelController extends Controller
         $destination = new Destination();
         $destination->country_id = $request->country_id;
         $destination->name = $request->name;
-        $destination->title = $request->title;
+        $destination->days = $request->days;
         $destination->description = $request->description;
         $destination->image = $imageUrl;
         $destination->price = $request->price;
@@ -351,8 +383,8 @@ class TravelController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'country_id' => 'required|exists:countries,id',
-            'name' => 'nullable|string',
-            'title' => 'nullable|string',
+            'name' => 'required|string',
+            'days' => 'required|integer',
             'description' => 'required|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
             'price' => 'required|numeric',
@@ -396,7 +428,7 @@ class TravelController extends Controller
         }
         $destination->country_id = $request->country_id;
         $destination->name = $request->name;
-        $destination->title = $request->title;
+        $destination->days = $request->days;
         $destination->description = $request->description;
         $destination->price = $request->price;
         $destination->includes_excludes = $request->includes_excludes;
@@ -432,6 +464,24 @@ class TravelController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Destination deleted successfully'
+        ], 200);
+    }
+
+    //get country wise destinations
+    public function getDestinationsByCountry($id)
+    {
+        $cwDestinations = Country::with('destinations')->find($id);
+
+        if (!$cwDestinations) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No destinations found'
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'country' => $cwDestinations
         ], 200);
     }
 }

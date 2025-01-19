@@ -43,7 +43,7 @@ class EnquiryFormController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while sending the enquiry',
-                'error' => $e->getMessage()
+                // 'error' => $e->getMessage()
             ], 500);
         }
 
