@@ -74,15 +74,32 @@ class TravelController extends Controller
      */
 
     //get all countries
-    public function getCountries()
+    public function getCountries(Request $request)
     {
-        $countries = Country::all();
+        $countries = Country::orderBy('name')->paginate($request->per_page ?? 10);
         if (!$countries) {
             return response()->json([
                 'success' => false,
                 'message' => 'No countries found'
             ], 404);
         }
+
+        $countries->transform(function ($country) {
+            $imagePath = parse_url($country->image);
+            if (isset($imagePath['path'])) {
+                $country->image = url($imagePath['path']);
+            }
+            return [
+                'id' => $country->id,
+                'continent_id' => $country->continent_id,
+                'continent' => $country->continent->name,
+                'name' => $country->name,
+                'title' => $country->title,
+                'image' => $country->image,
+                'created_at' => $country->created_at,
+                'updated_at' => $country->updated_at
+            ];
+        });
 
         return response()->json([
             'success' => true,
@@ -101,7 +118,20 @@ class TravelController extends Controller
                 'message' => 'Country not found'
             ], 404);
         }
-
+        $imagePath = parse_url($country->image);
+        if (isset($imagePath['path'])) {
+            $country->image = url($imagePath['path']);
+        }
+        $country = [
+            'id' => $country->id,
+            'continent_id' => $country->continent_id,
+            'continent' => $country->continent->name,
+            'name' => $country->name,
+            'title' => $country->title,
+            'image' => $country->image,
+            'created_at' => $country->created_at,
+            'updated_at' => $country->updated_at
+        ];
         return response()->json([
             'success' => true,
             'country' => $country
@@ -115,7 +145,8 @@ class TravelController extends Controller
             'continent_id' => 'required|exists:continents,id',
             'name' => 'required|string|unique:countries',
             'title' => 'required|string',
-            'image' => 'required|image|mimes:jpeg,png,jpg|max:5120',
+            // 'image' => 'required|image|mimes:jpeg,png,jpg|max:5120',
+            'image' => 'required|image|mimes:jpeg,png,jpg',
         ]);
         if ($validator->fails()) {
             return response()->json([
@@ -153,9 +184,10 @@ class TravelController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'continent_id' => 'required|exists:continents,id',
-            'name' => 'required|string|unique:countries',
+            'name' => 'required|string|unique:countries,name,' . $id,
             'title' => 'required|string',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
+            // 'image' => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg',
         ]);
         if ($validator->fails()) {
             return response()->json([
@@ -190,6 +222,10 @@ class TravelController extends Controller
             }
             $image->move($uploadPath, $imageName);
             $imageUrl = url('uploads/images/countries/' . $imageName);
+            $imagePath = parse_url($country->image);
+            if (isset($imagePath['path'])) {
+                $country->image = url($imagePath['path']);
+            }
             $country->image = $imageUrl;
         }
         $country->continent_id = $request->continent_id;
@@ -228,9 +264,28 @@ class TravelController extends Controller
 
 
     //get countries by continent
-    public function getCountriesByContinent($id)
+    public function getCountriesByContinent(Request $request, $id)
     {
-        $countries = Country::where('continent_id', $id)->get();
+        $perPage = $request->per_page ?? 10;
+        $countries = Country::where('continent_id', $id)->paginate($perPage);
+
+        $countries->transform(function ($country) {
+            $imagePath = parse_url($country->image);
+            if (isset($imagePath['path'])) {
+                $country->image = url($imagePath['path']);
+            }
+            return [
+                'id' => $country->id,
+                'continent_id' => $country->continent_id,
+                'continent' => $country->continent->name,
+                'name' => $country->name,
+                'title' => $country->title,
+                'image' => $country->image,
+                'created_at' => $country->created_at,
+                'updated_at' => $country->updated_at
+            ];
+        });
+
         if (!$countries) {
             return response()->json([
                 'success' => false,
@@ -257,25 +312,33 @@ class TravelController extends Controller
         if (!$destinations) {
             return response()->json([
                 'success' => false,
-                'message' => 'No destinations found'
+                'message' => 'No Package found'
             ], 404);
         }
-        // $destinations->transform(function ($destination) {
-        //     return [
-        //         'id' => $destination->id,
-        //         'country_id' => $destination->country_id,
-        //         'country' => $destination->country->name,
-        //         'name' => $destination->name,
-        //         'title' => $destination->title,
-        //         'description' => $destination->description,
-        //         'image' => $destination->image,
-        //         'price' => $destination->price,
-        //         'includes_excludes' => $destination->includes_excludes,
-        //         'hotels' => $destination->hotels,
-        //         'price_validity' => $destination->price_validity,
-        //         'itinerary' => $destination->itinerary,
-        //     ];
-        // });
+        $destinations->transform(function ($destination) {
+            $imagePath = parse_url($destination->image);
+            if (isset($imagePath['path'])) {
+                $destination->image = url($imagePath['path']);
+            }
+            return [
+                'id' => $destination->id,
+                'country_id' => $destination->country_id,
+                'country_name' => $destination->country->name,
+                'continent_id' => $destination->country->continent->id,
+                'continent_name' => $destination->country->continent->name,
+                'name' => $destination->name,
+                // 'title' => $destination->title,
+                'days' => $destination->days,
+                'description' => $destination->description,
+                'image' => $destination->image,
+                'price' => $destination->price,
+                'includes_excludes' => json_decode($destination->includes_excludes),
+                'hotels' =>json_decode( $destination->hotels),
+                'price_validity' => json_decode($destination->price_validity),
+                'itinerary' => json_decode($destination->itinerary),
+                'created_at' => $destination->created_at,
+            ];
+        });
 
 
         return response()->json([
@@ -291,9 +354,33 @@ class TravelController extends Controller
         if (!$destination) {
             return response()->json([
                 'success' => false,
-                'message' => 'Destination not found'
+                'message' => 'Package not found'
             ], 404);
         }
+
+        $imagePath = parse_url($destination->image);
+        if (isset($imagePath['path'])) {
+            $destination->image = url($imagePath['path']);
+        }
+
+        $destination = [
+            'id' => $destination->id,
+            'country_id' => $destination->country_id,
+            'country_name' => $destination->country->name,
+            'continent_id' => $destination->country->continent->id,
+            'continent_name' => $destination->country->continent->name,
+            'name' => $destination->name,
+            // 'title' => $destination->title,
+            'days' => $destination->days,
+            'description' => $destination->description,
+            'image' => $destination->image,
+            'price' => $destination->price,
+            'includes_excludes' => json_decode($destination->includes_excludes),
+            'hotels' => json_decode($destination->hotels),
+            'price_validity' => json_decode($destination->price_validity),
+            'itinerary' => json_decode($destination->itinerary),
+            'created_at' => $destination->created_at,
+        ];
 
         return response()->json([
             'success' => true,
@@ -306,22 +393,24 @@ class TravelController extends Controller
     {
        try{
         //check if destination add less than 3
-        $destinationCount = Destination::where('country_id', $request->country_id)->count();
-        if ($destinationCount >= 3) {
-            return response()->json([
-                'success' => false,
-                'message' => 'You can add maximum 3 destinations for a country'
-            ], 400);
-        }
+        // $destinationCount = Destination::where('country_id', $request->country_id)->count();
+        // if ($destinationCount >= 3) {
+        //     return response()->json([
+        //         'success' => false,
+        //         'message' => 'You can add maximum 3 destinations for a country'
+        //     ], 400);
+        // }
 
 
         $validator = Validator::make($request->all(), [
             'country_id' => 'required|exists:countries,id',
             'name' => 'required|string',
-            'days' => 'required|integer',
+            'days' => 'required|string',
             'description' => 'required|string',
-            'image' => 'required|image|mimes:jpeg,png,jpg|max:5120',
-            'price' => 'required|numeric',
+            // 'image' => 'required|image|mimes:jpeg,png,jpg|max:5120',
+            'image' => 'required|image|mimes:jpeg,png,jpg',
+            // 'image' => 'nullable',
+            'price' => 'required|string',
             'includes_excludes'=>'nullable|json',
             'hotels'=>'nullable|json',
             'price_validity'=>'nullable|json',
@@ -344,8 +433,9 @@ class TravelController extends Controller
                 mkdir($uploadPath, 0777, true);
             }
             $image->move($uploadPath, $imageName);
+            $imageUrl = url('uploads/images/destinations/' . $imageName);
         }
-        $imageUrl = url('uploads/images/destinations/' . $imageName);
+
 
 
         $destination = new Destination();
@@ -354,6 +444,7 @@ class TravelController extends Controller
         $destination->days = $request->days;
         $destination->description = $request->description;
         $destination->image = $imageUrl;
+        // $destination->image = "no image";
         $destination->price = $request->price;
         $destination->includes_excludes = $request->includes_excludes;
         $destination->hotels = $request->hotels;
@@ -363,7 +454,7 @@ class TravelController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Destination created successfully',
+            'message' => 'Package created successfully',
             'destination' => $destination
         ], 201);
 
@@ -382,12 +473,13 @@ class TravelController extends Controller
     public function updateDestination(Request $request, $id)
     {
         $validator = Validator::make($request->all(), [
-            'country_id' => 'required|exists:countries,id',
-            'name' => 'required|string',
-            'days' => 'required|integer',
-            'description' => 'required|string',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
-            'price' => 'required|numeric',
+            'country_id' => 'nullable|exists:countries,id',
+            'name' => 'nullable|string',
+            'days' => 'nullable|integer',
+            'description' => 'nullable|string',
+            // 'image' => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg',
+            'price' => 'nullable|numeric',
             'includes_excludes'=>'nullable|json',
             'hotels'=>'nullable|json',
             'price_validity'=>'nullable|json',
@@ -403,7 +495,7 @@ class TravelController extends Controller
         if (!$destination) {
             return response()->json([
                 'success' => false,
-                'message' => 'Destination not found'
+                'message' => 'Package not found'
             ], 404);
         }
 
@@ -424,21 +516,36 @@ class TravelController extends Controller
             }
             $image->move($uploadPath, $imageName);
             $imageUrl = url('uploads/images/destinations/' . $imageName);
-            $destination->image = $imageUrl;
+            $imagePath = parse_url($destination->image);
+            if (isset($imagePath['path'])) {
+                $destination->image = url($imagePath['path']);
+            }
+            // $destination->image = $imageUrl;
         }
-        $destination->country_id = $request->country_id;
-        $destination->name = $request->name;
-        $destination->days = $request->days;
-        $destination->description = $request->description;
-        $destination->price = $request->price;
-        $destination->includes_excludes = $request->includes_excludes;
-        $destination->hotels = $request->hotels;
-        $destination->price_validity = $request->price_validity;
-        $destination->itinerary = $request->itinerary;
+        // $destination->country_id = $request->country_id;
+        // $destination->name = $request->name;
+        // $destination->days = $request->days;
+        // $destination->description = $request->description;
+        // $destination->price = $request->price;
+        // $destination->includes_excludes = $request->includes_excludes;
+        // $destination->hotels = $request->hotels;
+        // $destination->price_validity = $request->price_validity;
+        // $destination->itinerary = $request->itinerary;
+
+        //check null values
+        $request->country_id ? $destination->country_id = $request->country_id : $destination->country_id = $destination->country_id;
+        $request->name ? $destination->name = $request->name : $destination->name = $destination->name;
+        $request->days ? $destination->days = $request->days : $destination->days = $destination->days;
+        $request->description ? $destination->description = $request->description : $destination->description = $destination->description;
+        $request->price ? $destination->price = $request->price : $destination->price = $destination->price;
+        $request->includes_excludes ? $destination->includes_excludes = $request->includes_excludes : $destination->includes_excludes = $destination->includes_excludes;
+        $request->hotels ? $destination->hotels = $request->hotels : $destination->hotels = $destination->hotels;
+        $request->price_validity ? $destination->price_validity = $request->price_validity : $destination->price_validity = $destination->price_validity;
+        $request->itinerary ? $destination->itinerary = $request->itinerary : $destination->itinerary = $destination->itinerary;
         $destination->save();
         return response()->json([
             'success' => true,
-            'message' => 'Destination updated successfully',
+            'message' => 'Package updated successfully',
             'destination' => $destination
         ], 200);
 
@@ -452,7 +559,7 @@ class TravelController extends Controller
         if (!$destination) {
             return response()->json([
                 'success' => false,
-                'message' => 'Destination not found'
+                'message' => 'Package not found'
             ], 404);
         }
         //delete image
@@ -463,7 +570,7 @@ class TravelController extends Controller
         $destination->delete();
         return response()->json([
             'success' => true,
-            'message' => 'Destination deleted successfully'
+            'message' => 'Package deleted successfully'
         ], 200);
     }
 
@@ -475,13 +582,82 @@ class TravelController extends Controller
         if (!$cwDestinations) {
             return response()->json([
                 'success' => false,
-                'message' => 'No destinations found'
+                'message' => 'No package found'
             ], 404);
         }
+        // dd($cwDestinations->image);
+        $imagePath = parse_url($cwDestinations->image);
+        if (isset($imagePath['path'])) {
+            $cwDestinations->image = url($imagePath['path']);
+        }
+
+        $cwDestinations->destinations->transform(function ($destination) {
+            $imagePath = parse_url($destination->image);
+            if (isset($imagePath['path'])) {
+                $destination->image = url($imagePath['path']);
+            }
+            return [
+                'id' => $destination->id,
+                'country_id' => $destination->country_id,
+                'country_name' => $destination->country->name,
+                'continent_id' => $destination->country->continent->id,
+                'continent_name' => $destination->country->continent->name,
+                'package_name' => $destination->name,
+                // 'title' => $destination->title,
+                'days' => $destination->days,
+                'description' => $destination->description,
+                'image' => $destination->image,
+                'price' => $destination->price,
+                'includes_excludes' => json_decode($destination->includes_excludes),
+                'hotels' => json_decode($destination->hotels),
+                'price_validity' => json_decode($destination->price_validity),
+                'itinerary' => json_decode($destination->itinerary),
+                'created_at' => $destination->created_at,
+            ];
+        });
 
         return response()->json([
             'success' => true,
             'country' => $cwDestinations
+        ], 200);
+    }
+
+
+    //get getRandomlyDestination
+    public function getRandomlyDestination()
+    {
+        $perPage = request()->per_page ?? 3;
+        $destinations = Destination::inRandomOrder()->paginate($perPage);
+        if (!$destinations) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No Package found'
+            ], 404);
+        }
+        $destinations->transform(function ($destination) {
+            $imagePath = parse_url($destination->image);
+            if (isset($imagePath['path'])) {
+                $destination->image = url($imagePath['path']);
+            }
+            return [
+                'id' => $destination->id,
+                'country_id' => $destination->country_id,
+                'country_name' => $destination->country->name,
+                'continent_id' => $destination->country->continent->id,
+                'continent_name' => $destination->country->continent->name,
+                'name' => $destination->name,
+                // 'title' => $destination->title,
+                'days' => $destination->days,
+                'image' => $destination->image,
+                'price' => $destination->price,
+                'created_at' => $destination->created_at,
+            ];
+        });
+
+
+        return response()->json([
+            'success' => true,
+            'destinations' => $destinations
         ], 200);
     }
 }

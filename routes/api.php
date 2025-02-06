@@ -37,6 +37,7 @@ Route::group(['prefix' => 'admin'], function () {
 
         //get destination by country
         Route::get('/destination/country/{id}', 'TravelController@getDestinationsByCountry');
+        Route::get('/random-destination', 'TravelController@getRandomlyDestination');
 
         /**
          * Blog controller routes
